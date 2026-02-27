@@ -27,7 +27,18 @@ dependencies {
 対象 Mod が API を公開していない場合、あなたは対象 Mod がどのようなクラス構成（アイテムの定義、イベント、システムなど）になっているかを正確に把握する必要があります。以下の手順でソースコードを直接調査してください。
 
 1. **jarファイルの特定**: Gradle キャッシュ (`~/.gradle/caches/modules-2/files-2.1/` など) 内にある、対象 Mod のコンパイル済み `.jar` ファイルを検索して特定します。
-2. **デコンパイルの実行**: IntelliJ IDEA 等に内蔵されているデコンパイラ (`java-decompiler.jar`) を利用し、Javaソースコードを抽出します。
+2. **`unzip` による事前調査（デコンパイルのスキップ判断）**: デコンパイルを実行する前に、`unzip` コマンドで `.jar` を展開し、リソースファイルのみで目的を達成できるか確認してください。
+   ```bash
+   unzip <対象の.jarファイル> -d ./target_mod_extracted
+   ```
+   展開後、以下のようなケースではデコンパイルを**スキップできます**:
+   - アイテム・ブロックの `ResourceLocation`（例: `modid:item_name`）を特定したいだけの場合 → `assets/` や `data/` 配下の JSON ファイル（モデル定義、ルートテーブル、レシピなど）を参照することで確認可能です。
+   - `META-INF/mods.toml` や `MANIFEST.MF` で Mod ID やバージョン情報を確認したい場合。
+   - テクスチャ・サウンドなどのリソースパスを把握したい場合。
+
+   上記に該当しない場合（クラスの継承・API 呼び出しなど、コードレベルの解析が必要な場合）は、次の手順でデコンパイルを実行してください。
+
+3. **デコンパイルの実行**: IntelliJ IDEA 等に内蔵されているデコンパイラ (`java-decompiler.jar`) を利用し、Javaソースコードを抽出します。
    - **特定クラスのみ調査する場合（高速）**: `.jar` を `unzip` コマンド等でプロジェクト内の一時ディレクトリ（例: `./target_mod_decompiled`）に展開し、調査対象の `.class` ファイル（例: `SomeItem.class`）のみをプロジェクト内の出力ディレクトリ（例: `./target_src_decompiled`）にデコンパイルします。
      ```bash
      java -cp "/Applications/IntelliJ IDEA CE.app/Contents/plugins/java-decompiler/lib/java-decompiler.jar" org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler -dgs=1 <対象の.classファイル> <出力先ディレクトリ>
@@ -36,7 +47,7 @@ dependencies {
      ```bash
      java -cp "/Applications/IntelliJ IDEA CE.app/Contents/plugins/java-decompiler/lib/java-decompiler.jar" org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler -dgs=1 <対象の.jarファイル> <出力先ディレクトリ>
      ```
-3. **構造把握**: 抽出した `.java` ファイルの内容を読み込み、拡張したい機能の基底クラス、初期化方法（ビルダーパターンや専用のレジストリなど）、イベントのフック方法などを把握してください。
+4. **構造把握**: 抽出した `.java` ファイルの内容を読み込み、拡張したい機能の基底クラス、初期化方法（ビルダーパターンや専用のレジストリなど）、イベントのフック方法などを把握してください。
 
 ### ステップ 3: アドオン/拡張機能の設計・実装
 調査した内部 API の構造をもとに、ユーザーが希望する拡張要素のコードを実装します。
